@@ -1,0 +1,17 @@
+node_modules/
+dist/
+release/
+bin/*.exe
+*.log
+.DS_Store
+
+# 機密情報・ローカル検証データの漏洩防止
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+test-userdata*/
+debug-*.js
+*.token
+credentials*
