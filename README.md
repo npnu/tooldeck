@@ -17,8 +17,8 @@
 
 [Releases](https://github.com/npnu/tooldeck/releases) にインストーラーとポータブル版を置いています。
 
-- `ToolDeck Setup 1.0.0.exe` … インストーラー。通常はこちら
-- `ToolDeck 1.0.0.exe` … ポータブル版。インストールせずに起動できます
+- `ToolDeck-Setup-1.0.0.exe` … インストーラー。通常はこちら
+- `ToolDeck-1.0.0.exe` … ポータブル版。インストールせずに起動できます
 
 初回起動時に、ダウンロード機能で使う `yt-dlp.exe` と `ffmpeg.exe` を自動で取ってきます。数十秒から数分かかることがあります。進捗はダウンロード画面と設定画面に出ます。
 
