@@ -30,9 +30,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
 const isOverlay = new URLSearchParams(location.search).get('overlay') === '1';
 
 createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      {isOverlay ? <ScreenshotOverlay /> : <App />}
-    </ErrorBoundary>
-  </React.StrictMode>,
+  <ErrorBoundary>
+    {isOverlay ? <ScreenshotOverlay /> : <React.StrictMode><App /></React.StrictMode>}
+  </ErrorBoundary>,
 );

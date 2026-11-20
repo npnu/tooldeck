@@ -6,48 +6,34 @@ interface Rect { x: number; y: number; w: number; h: number }
 export default function ScreenshotOverlay() {
   const contentRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const [ready, setReady] = useState(false);
   const [rect, setRect] = useState<Rect | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    (async () => {
-      try {
-        const sources = await api.screenshot.sources();
-        const source = sources.find((s) => s.id.startsWith('screen:')) ?? sources[0];
-        if (!source) throw new Error('画面ソースが見つかりません');
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            mandatory: {
-              chromeMediaSource: 'desktop',
-              chromeMediaSourceId: source.id,
-            },
-          } as unknown as MediaTrackConstraints,
-        });
-        const video = videoRef.current!;
-        video.srcObject = stream;
-        await video.play();
-        const canvas = contentRef.current!;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d')!.drawImage(video, 0, 0);
+    const off = api.events.onScreenshotInit((dataURL) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = contentRef.current;
+        if (!canvas) return;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0);
         setReady(true);
-      } catch (e) {
-        setError(String(e));
-      }
-    })();
-
+        api.screenshot.ready();
+      };
+      img.onerror = () => setError('スクリーンショット画像の読み込みに失敗しました');
+      img.src = dataURL;
+    });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') api.screenshot.done(null);
     };
     window.addEventListener('keydown', onKey);
+    api.screenshot.mounted();
     return () => {
+      off();
       window.removeEventListener('keydown', onKey);
-      stream?.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
@@ -97,7 +83,7 @@ export default function ScreenshotOverlay() {
   };
 
   return (
-    <div className="h-screen w-screen cursor-crosshair overflow-hidden bg-black">
+    <div className="relative h-screen w-screen cursor-crosshair overflow-hidden">
       <canvas ref={contentRef} className="absolute inset-0 h-full w-full object-fill" />
       <canvas ref={overlayRef} className="absolute inset-0 h-full w-full"
         onMouseDown={(e) => {
@@ -112,10 +98,9 @@ export default function ScreenshotOverlay() {
         }}
         onMouseUp={(e) => finish(pos(e))}
       />
-      <video ref={videoRef} className="hidden" muted playsInline />
       {!ready && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/80">
-          {error ? `キャプチャ開始に失敗: ${error}` : '画面を準備中...'}
+          {error || '画面を準備中...'}
         </div>
       )}
       {ready && !rect && (

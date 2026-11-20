@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, desktopCapturer } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 import type {
   BinariesStatus,
   ClipboardItem,
@@ -63,10 +63,8 @@ const api = {
   },
   screenshot: {
     open: () => ipcRenderer.invoke('screenshot:open'),
-    sources: async () => {
-      const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 320, height: 180 } });
-      return sources.map((s) => ({ id: s.id, name: s.name, thumbnail: s.thumbnail.toDataURL() }));
-    },
+    mounted: () => ipcRenderer.send('screenshot:mounted'),
+    ready: () => ipcRenderer.send('screenshot:ready'),
     done: (dataUrl: string | null) => ipcRenderer.send('screenshot:done', dataUrl),
   },
   events: {
@@ -74,6 +72,7 @@ const api = {
     onDownloadUpdate: (cb: Listener<DownloadItem[]>) => on('download:update', cb),
     onBinariesProgress: (cb: Listener<BinariesStatus>) => on('binaries:progress', cb),
     onNavigate: (cb: Listener<string>) => on('navigate', cb),
+    onScreenshotInit: (cb: Listener<string>) => on('screenshot:init', cb),
     onScreenshotCaptured: (cb: Listener<{ dataURL: string; filePath: string }>) => on('screenshot:captured', cb),
     onScreenshotRequest: (cb: Listener<void>) => on('screenshot:request', cb),
   },
