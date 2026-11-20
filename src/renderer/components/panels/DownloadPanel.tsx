@@ -58,13 +58,16 @@ export default function DownloadPanel() {
         title="ダウンロード"
         description="YouTube などを高画質で保存。MP3抽出・プレイリスト・字幕に対応。"
         right={
-          <button className="btn" onClick={async () => {
-            const dir = await api.directoryDialog();
-            if (!dir) return;
-            await api.setSettings({ downloadDir: dir });
-            setDownloadDir(dir);
-            toast('保存先を変更しました');
-          }}><FolderOpen size={15} /> 保存先変更</button>
+          <div className="flex gap-2">
+            <button className="btn" onClick={() => api.downloads.openFolder()}><FolderOpen size={15} /> 保存先を開く</button>
+            <button className="btn" onClick={async () => {
+              const dir = await api.directoryDialog();
+              if (!dir) return;
+              await api.setSettings({ downloadDir: dir });
+              setDownloadDir(dir);
+              toast('保存先を変更しました');
+            }}>保存先変更</button>
+          </div>
         }
       />
 
@@ -181,8 +184,11 @@ export default function DownloadPanel() {
                     {(d.status === 'downloading' || d.status === 'queued') && (
                       <button className="rounded-lg p-2 text-muted hover:bg-rose-500/15 hover:text-rose-400" title="キャンセル" onClick={() => api.downloads.cancel(d.id)}><XCircle size={16} /></button>
                     )}
-                    {d.status === 'done' && d.outputPath && (
-                      <button className="rounded-lg p-2 text-muted hover:bg-accent/15 hover:text-accent" title="ファイルを開く" onClick={() => api.showItem(d.outputPath)}><FolderOpen size={16} /></button>
+                    {d.status === 'done' && (
+                      <button className="rounded-lg p-2 text-muted hover:bg-accent/15 hover:text-accent" title="ファイルの場所を開く"
+                        onClick={() => d.outputPath ? api.showItem(d.outputPath) : api.downloads.openFolder()}>
+                        <FolderOpen size={16} />
+                      </button>
                     )}
                     <button className="rounded-lg p-2 text-muted hover:bg-white/5 hover:text-txt" title="削除" onClick={() => api.downloads.remove(d.id)}><Trash2 size={16} /></button>
                   </div>

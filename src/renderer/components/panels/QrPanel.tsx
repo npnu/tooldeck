@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { QrCode, ScanLine, Copy, Save, ExternalLink } from 'lucide-react';
+import { QrCode, ScanLine, Copy, Save, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import QRCode from 'qrcode';
 import jsQR from 'jsqr';
 import { api } from '../../api';
@@ -63,6 +63,10 @@ export default function QrPanel() {
                 await navigator.clipboard.writeText(text);
                 toast('内容をコピーしました');
               }}><Copy size={15} /> 内容をコピー</button>
+              <button className="btn" disabled={!qr} onClick={async () => {
+                const ok = await api.clipboard.writeImage(qr);
+                toast(ok ? 'QR画像をコピーしました' : 'コピーに失敗しました', ok ? 'success' : 'error');
+              }}><ImageIcon size={15} /> 画像をコピー</button>
               <button className="btn" disabled={!qr} onClick={async () => {
                 const file = await api.saveDialog('qrcode.png');
                 if (file) {

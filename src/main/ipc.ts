@@ -1,4 +1,4 @@
-import { ipcMain, dialog, app, shell, BrowserWindow, globalShortcut } from 'electron';
+import { ipcMain, dialog, app, shell, BrowserWindow, globalShortcut, clipboard, nativeImage } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { store } from './store';
@@ -110,6 +110,16 @@ export function registerIpc(getMainWindow: () => BrowserWindow | null) {
   ipcMain.handle('clipboard:clear', () => clearClipboard());
   ipcMain.handle('clipboard:paste', (_e, id: string) => pasteClipboardItem(id));
   ipcMain.handle('clipboard:image', (_e, filePath: string) => readClipboardImage(filePath));
+  ipcMain.handle('clipboard:writeImage', (_e, dataUrl: string) => {
+    try {
+      const image = nativeImage.createFromDataURL(dataUrl);
+      if (image.isEmpty()) return false;
+      clipboard.writeImage(image);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 
   ipcMain.handle('snippets:list', () => listSnippets());
   ipcMain.handle('snippets:add', (_e, title: string, content: string) => addSnippet(title, content));
@@ -121,6 +131,12 @@ export function registerIpc(getMainWindow: () => BrowserWindow | null) {
   ipcMain.handle('downloads:cancel', (_e, id: string) => cancelDownload(id));
   ipcMain.handle('downloads:remove', (_e, id: string) => removeDownload(id));
   ipcMain.handle('downloads:clearFinished', () => clearFinishedDownloads());
+  ipcMain.handle('downloads:openFolder', () => {
+    const settings = store.get('settings');
+    const dir = settings.downloadDir || path.join(app.getPath('downloads'), 'ToolDeck');
+    fs.mkdirSync(dir, { recursive: true });
+    return shell.openPath(dir);
+  });
 
   ipcMain.handle('notes:list', () => store.get('notes'));
   ipcMain.handle('notes:save', (_e, notes: Note[]) => {

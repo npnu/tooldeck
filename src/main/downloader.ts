@@ -61,16 +61,21 @@ function buildArgs(options: DownloadOptions, outputTemplate: string): string[] {
   if (options.subtitles) {
     args.push('--write-subs', '--write-auto-subs', '--sub-langs', 'ja.*,en.*', '--embed-subs');
   }
+  // Print the final path after merging/moving so we can open the real file.
+  args.push('--print', 'after_move:filepath');
   return args;
 }
 
-function parseProgress(chunk: string, item: DownloadItem) {
-  const lines = chunk.split(/[\r\n]+/);
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line) continue;
+let stdoutBuffer = '';
+
+function processLine(line: string, item: DownloadItem) {
+  if (!line) return;
     const dest = line.match(/\[download\] Destination: (.+)/);
     if (dest) patch(item.id, { outputPath: dest[1] });
+    const merged = line.match(/Merging formats into "(.+)"/);
+    if (merged) patch(item.id, { outputPath: merged[1] });
+    const finalPath = line.match(/^([A-Za-z]:[\\/].+|\\\\[^\\]+\\.+)$/);
+    if (finalPath && fs.existsSync(finalPath[1])) patch(item.id, { outputPath: finalPath[1] });
     const pct = line.match(/(\d+(?:\.\d+)?)%/);
     if (pct) {
       const speed = line.match(/at\s+([0-9.]+\s*\S+\/s)/);
@@ -85,7 +90,13 @@ function parseProgress(chunk: string, item: DownloadItem) {
       });
     }
     if (line.includes('[download] 100%')) patch(item.id, { progress: 100 });
-  }
+}
+
+function parseProgress(chunk: string, item: DownloadItem) {
+  stdoutBuffer += chunk;
+  const parts = stdoutBuffer.split(/[\r\n]+/);
+  stdoutBuffer = parts.pop() ?? '';
+  for (const raw of parts) processLine(raw.trim(), item);
 }
 
 function fetchTitle(item: DownloadItem) {
@@ -112,6 +123,7 @@ function pump() {
     return;
   }
 
+  stdoutBuffer = '';
   const settings = store.get('settings');
   const dir = settings.downloadDir || path.join(app.getPath('downloads'), 'ToolDeck');
   fs.mkdirSync(dir, { recursive: true });
@@ -140,7 +152,21 @@ function pump() {
     if (!active || active.item.id !== next.id) return;
     active = null;
     if (code === 0) {
-      patch(next.id, { status: 'done', progress: 100, speed: '', eta: '' });
+      if (stdoutBuffer.trim()) processLine(stdoutBuffer.trim(), next);
+      let outputPath = next.outputPath;
+      if (!outputPath || !fs.existsSync(outputPath)) {
+        // Fallback: newest file in the download folder.
+        try {
+          const files = fs.readdirSync(dir)
+            .map((name) => path.join(dir, name))
+            .filter((file) => fs.statSync(file).isFile())
+            .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+          outputPath = files[0] ?? '';
+        } catch {
+          outputPath = '';
+        }
+      }
+      patch(next.id, { status: 'done', progress: 100, speed: '', eta: '', outputPath });
     } else if (next.status !== 'cancelled') {
       const detail = stderr.trim().split('\n').slice(-2).join(' ').slice(0, 300);
       patch(next.id, { status: 'error', error: detail || `終了コード ${code}` });

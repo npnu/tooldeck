@@ -44,6 +44,7 @@ const api = {
     clear: () => ipcRenderer.invoke('clipboard:clear') as Promise<ClipboardItem[]>,
     paste: (id: string) => ipcRenderer.invoke('clipboard:paste', id) as Promise<boolean>,
     image: (filePath: string) => ipcRenderer.invoke('clipboard:image', filePath) as Promise<string | null>,
+    writeImage: (dataUrl: string) => ipcRenderer.invoke('clipboard:writeImage', dataUrl) as Promise<boolean>,
   },
   snippets: {
     list: () => ipcRenderer.invoke('snippets:list') as Promise<Snippet[]>,
@@ -57,6 +58,7 @@ const api = {
     cancel: (id: string) => ipcRenderer.invoke('downloads:cancel', id),
     remove: (id: string) => ipcRenderer.invoke('downloads:remove', id),
     clearFinished: () => ipcRenderer.invoke('downloads:clearFinished'),
+    openFolder: () => ipcRenderer.invoke('downloads:openFolder') as Promise<string>,
   },
   notes: {
     list: () => ipcRenderer.invoke('notes:list') as Promise<Note[]>,
