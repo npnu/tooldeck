@@ -65,7 +65,12 @@ function detect(): { kind: ClipboardKind; content: string; hash: string; preview
 function poll() {
   const settings = store.get('settings');
   if (!settings.clipboardEnabled) return;
-  const found = detect();
+  let found;
+  try {
+    found = detect();
+  } catch {
+    return;
+  }
   if (!found || found.hash === lastHash) return;
   lastHash = found.hash;
 
@@ -87,7 +92,7 @@ function poll() {
     pinned: false,
     createdAt: Date.now(),
   };
-  const next = [item, ...items].filter((i) => i.pinned || i.id !== item.id);
+  const next = [item, ...items.filter((i) => i.id !== item.id)];
   const limit = settings.clipboardLimit;
   const trimmed = next.slice(0, Math.max(20, limit));
   store.set('clipboard', trimmed);
