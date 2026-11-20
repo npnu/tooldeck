@@ -1,6 +1,6 @@
 {
   "name": "tooldeck",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Windows all-in-one utility app: clipboard history, downloads, screenshots and more",
   "main": "dist/main/index.js",
   "author": "ToolDeck",
