@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import ScreenshotOverlay from './components/ScreenshotOverlay';
+import MiniPlayer from './components/MiniPlayer';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -27,10 +28,12 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
   }
 }
 
-const isOverlay = new URLSearchParams(location.search).get('overlay') === '1';
+const params = new URLSearchParams(location.search);
+const isOverlay = params.get('overlay') === '1';
+const isMini = params.get('mini') === '1';
 
 createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
-    {isOverlay ? <ScreenshotOverlay /> : <React.StrictMode><App /></React.StrictMode>}
+    {isOverlay ? <ScreenshotOverlay /> : isMini ? <MiniPlayer /> : <React.StrictMode><App /></React.StrictMode>}
   </ErrorBoundary>,
 );

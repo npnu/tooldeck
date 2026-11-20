@@ -44,6 +44,17 @@ export interface DownloadItem {
   options?: DownloadOptions;
 }
 
+export interface UpdateStatus {
+  checking: boolean;
+  downloading: boolean;
+  percent: number;
+  current: string;
+  latest: string;
+  available: boolean;
+  url: string;
+  error: string;
+}
+
 export interface BinariesStatus {
   ytDlp: boolean;
   ffmpeg: boolean;
@@ -62,12 +73,13 @@ export interface Note {
   updatedAt: number;
 }
 
-export type Theme = 'dark' | 'light';
+export type Theme = 'dark' | 'light' | 'glass' | 'midnight' | 'sakura';
 
 export interface Settings {
   theme: Theme;
   accent: string;
   downloadDir: string;
+  musicUrl: string;
   autoSetupBinaries: boolean;
   clipboardLimit: number;
   clipboardEnabled: boolean;
@@ -81,12 +93,13 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
   accent: '#6366f1',
   downloadDir: '',
+  musicUrl: '',
   autoSetupBinaries: true,
   clipboardLimit: 200,
   clipboardEnabled: true,
   downloadHotkey: 'CommandOrControl+Shift+D',
   clipboardHotkey: 'CommandOrControl+Shift+V',
-  screenshotHotkey: 'CommandOrControl+Shift+S',
+  screenshotHotkey: 'CommandOrControl+Shift+X',
   launchAtStartup: false,
 };
 
@@ -105,5 +118,6 @@ export const PANELS: Panel[] = [
   { id: 'password', label: 'パスワード' },
   { id: 'color', label: 'カラー' },
   { id: 'notes', label: 'メモ' },
+  { id: 'music', label: '音楽' },
   { id: 'settings', label: '設定' },
 ];

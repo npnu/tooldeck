@@ -15,6 +15,7 @@ import QrPanel from './components/panels/QrPanel';
 import PasswordPanel from './components/panels/PasswordPanel';
 import ColorPanel from './components/panels/ColorPanel';
 import NotesPanel from './components/panels/NotesPanel';
+import MusicPanel from './components/panels/MusicPanel';
 import SettingsPanel from './components/panels/SettingsPanel';
 
 const PANEL_COMPONENTS: Record<string, React.ComponentType> = {
@@ -27,8 +28,16 @@ const PANEL_COMPONENTS: Record<string, React.ComponentType> = {
   password: PasswordPanel,
   color: ColorPanel,
   notes: NotesPanel,
+  music: MusicPanel,
   settings: SettingsPanel,
 };
+
+function applyThemeClasses(theme: string) {
+  const root = document.documentElement;
+  ['dark', 'light', 'glass', 'midnight', 'sakura'].forEach((t) => {
+    root.classList.toggle(`theme-${t}`, theme === t);
+  });
+}
 
 function hexToRgbTriplet(hex: string) {
   const m = hex.replace('#', '');
@@ -45,7 +54,7 @@ export default function App() {
   useEffect(() => {
     api.settings().then((s) => {
       setSettings(s);
-      document.documentElement.classList.toggle('light', s.theme === 'light');
+      applyThemeClasses(s.theme);
       document.documentElement.style.setProperty('--accent', hexToRgbTriplet(s.accent));
     });
     const unsubs = [
@@ -54,16 +63,15 @@ export default function App() {
         setActive('screenshot');
         api.screenshot.open();
       }),
+      api.events.onSettingsUpdated((s) => {
+        setSettings(s);
+        applyThemeClasses(s.theme);
+        document.documentElement.style.setProperty('--accent', hexToRgbTriplet(s.accent));
+      }),
     ];
     api.ready();
     return () => unsubs.forEach((u) => u());
   }, []);
-
-  const applySettings = (s: Settings) => {
-    setSettings(s);
-    document.documentElement.classList.toggle('light', s.theme === 'light');
-    document.documentElement.style.setProperty('--accent', hexToRgbTriplet(s.accent));
-  };
 
   const Panel = PANEL_COMPONENTS[active] ?? ClipboardPanel;
 
@@ -89,18 +97,6 @@ export default function App() {
           </main>
         </div>
       </div>
-      <SettingsBridge onSettings={applySettings} current={settings} />
     </ToastProvider>
   );
-}
-
-/* SettingsPanel needs to push updated settings back to the theme without prop drilling. */
-import { settingsBus } from './components/panels/SettingsPanel';
-function SettingsBridge({ onSettings }: { onSettings: (s: Settings) => void; current: Settings | null }) {
-  const [_, setTick] = useState(0);
-  useEffect(() => settingsBus.subscribe((s) => {
-    onSettings(s);
-    setTick((x) => x + 1);
-  }), [onSettings]);
-  return null;
 }

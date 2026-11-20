@@ -1,5 +1,5 @@
 import {
-  Clipboard, Download, Scissors, Type, Files, QrCode, KeyRound, Palette, StickyNote, Settings,
+  Clipboard, Download, Scissors, Type, Files, QrCode, KeyRound, Palette, StickyNote, Settings, Music2,
 } from 'lucide-react';
 import { PANELS } from '../../shared/types';
 
@@ -13,6 +13,7 @@ const ICONS: Record<string, React.ReactNode> = {
   password: <KeyRound size={18} />,
   color: <Palette size={18} />,
   notes: <StickyNote size={18} />,
+  music: <Music2 size={18} />,
   settings: <Settings size={18} />,
 };
 
@@ -39,7 +40,7 @@ export default function Sidebar({ active, onChange }: { active: string; onChange
         <div className="font-semibold text-muted">ショートカット</div>
         <div className="mt-1">Ctrl+Shift+V 履歴</div>
         <div>Ctrl+Shift+D ダウンロード</div>
-        <div>Ctrl+Shift+S スクショ</div>
+        <div>Ctrl+Shift+X スクショ</div>
       </div>
     </aside>
   );

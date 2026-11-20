@@ -1,43 +1,35 @@
 import { useEffect, useState } from 'react';
-import { Settings as SettingsIcon, Moon, Sun, FolderOpen, Keyboard, Info, Power } from 'lucide-react';
+import { Settings as SettingsIcon, Moon, Sun, FolderOpen, Keyboard, Info, Power, RefreshCw, Download } from 'lucide-react';
 import { api } from '../../api';
 import { SectionTitle, useToast } from '../ui';
-import type { Settings } from '../../../shared/types';
-
-export const settingsBus = {
-  listeners: new Set<(s: Settings) => void>(),
-  subscribe(fn: (s: Settings) => void) {
-    this.listeners.add(fn);
-    return () => this.listeners.delete(fn);
-  },
-  emit(s: Settings) {
-    this.listeners.forEach((fn) => fn(s));
-  },
-};
+import type { Settings, UpdateStatus } from '../../../shared/types';
 
 export default function SettingsPanel() {
   const toast = useToast();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [version, setVersion] = useState('');
   const [binaries, setBinaries] = useState<import('../../../shared/types').BinariesStatus | null>(null);
+  const [updateState, setUpdateState] = useState<UpdateStatus | null>(null);
 
   useEffect(() => {
     api.settings().then(setSettings);
     api.version().then(setVersion);
     api.binaries().then(setBinaries);
+    api.update.status().then(setUpdateState);
+    const off = api.events.onUpdateStatus(setUpdateState);
+    return off;
   }, []);
 
   const update = async (patch: Partial<Settings>) => {
     if (!settings) return;
     const next = await api.setSettings(patch);
     setSettings(next);
-    settingsBus.emit(next);
   };
 
   if (!settings) return null;
 
   const presets = [
-    'CommandOrControl+Shift+V', 'CommandOrControl+Shift+D', 'CommandOrControl+Shift+S',
+    'CommandOrControl+Shift+V', 'CommandOrControl+Shift+D', 'CommandOrControl+Shift+X',
     'CommandOrControl+Alt+V', 'CommandOrControl+Alt+D', 'Alt+Space',
   ];
 
@@ -48,9 +40,20 @@ export default function SettingsPanel() {
       <div className="card mb-4 p-5">
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold"><Sun size={16} className="text-accent" /> 外観</h2>
         <label className="label">テーマ</label>
-        <div className="flex gap-2">
-          <button className={`btn flex-1 ${settings.theme === 'dark' ? 'btn-primary' : ''}`} onClick={() => update({ theme: 'dark' })}><Moon size={15} /> ダーク</button>
-          <button className={`btn flex-1 ${settings.theme === 'light' ? 'btn-primary' : ''}`} onClick={() => update({ theme: 'light' })}><Sun size={15} /> ライト</button>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+          {([
+            { id: 'dark' as const, label: 'ダーク', color: '#0b0e16' },
+            { id: 'light' as const, label: 'ライト', color: '#f4f6fb' },
+            { id: 'glass' as const, label: 'グラス', color: 'linear-gradient(135deg,#6366f1,#ec4899)' },
+            { id: 'midnight' as const, label: 'ミッドナイト', color: '#0e1326' },
+            { id: 'sakura' as const, label: 'さくら', color: '#f472b6' },
+          ]).map((t) => (
+            <button key={t.id} onClick={() => update({ theme: t.id })}
+              className={`flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-xs transition ${settings.theme === t.id ? 'border-accent bg-accent/10 text-accent' : 'border-line text-muted hover:border-accent/50 hover:text-txt'}`}>
+              <span className="h-6 w-6 rounded-full border border-white/20" style={{ background: t.color }} />
+              {t.label}
+            </button>
+          ))}
         </div>
         <label className="label mt-5">アクセントカラー</label>
         <div className="flex items-center gap-3">
@@ -136,6 +139,37 @@ export default function SettingsPanel() {
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold"><Power size={16} className="text-accent" /> 起動</h2>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.launchAtStartup}
           onChange={(e) => update({ launchAtStartup: e.target.checked })} /> Windows 起動時に自動開始</label>
+      </div>
+
+      <div className="card mb-4 p-5">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold"><Download size={16} className="text-accent" /> アップデート</h2>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span>現在: v{updateState?.current || version}</span>
+          {updateState?.latest && <span className="text-muted">最新: v{updateState.latest}</span>}
+          {updateState?.available && <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-400">更新あり</span>}
+          <button className="btn ml-auto px-3 py-1.5 text-xs" disabled={updateState?.checking || updateState?.downloading}
+            onClick={() => api.update.check()}>
+            <RefreshCw size={13} className={updateState?.checking ? 'animate-spin' : ''} /> 確認
+          </button>
+          {updateState?.available && !updateState.downloading && (
+            <button className="btn btn-primary px-3 py-1.5 text-xs" onClick={async () => {
+              try {
+                await api.update.download();
+                toast('ダウンロード完了。再起動して置き換えます');
+                api.update.install();
+              } catch (e) {
+                toast(`更新に失敗しました: ${String(e).slice(0, 60)}`, 'error');
+              }
+            }}><Download size={13} /> 更新する</button>
+          )}
+        </div>
+        {updateState?.downloading && (
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-panel">
+            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${updateState.percent}%` }} />
+          </div>
+        )}
+        {updateState?.error && <p className="mt-2 text-xs text-amber-400">{updateState.error}</p>}
+        <p className="mt-3 text-[11px] text-muted">更新は exe 1つで完結します。ダウンロード後、自動で再起動して入れ替えます。</p>
       </div>
 
       <div className="card p-5">

@@ -36,8 +36,13 @@ class JsonStore {
     try {
       if (!fs.existsSync(this.file)) return;
       const parsed = JSON.parse(fs.readFileSync(this.file, 'utf8')) as Partial<DbShape>;
+      const settings = { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) };
+      // Migrate the old screenshot shortcut for existing installs.
+      if (settings.screenshotHotkey === 'CommandOrControl+Shift+S') {
+        settings.screenshotHotkey = 'CommandOrControl+Shift+X';
+      }
       this.data = {
-        settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
+        settings,
         clipboard: Array.isArray(parsed.clipboard) ? parsed.clipboard : [],
         snippets: Array.isArray(parsed.snippets) ? parsed.snippets : [],
         downloads: Array.isArray(parsed.downloads) ? parsed.downloads : [],

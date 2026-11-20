@@ -23,10 +23,13 @@ import {
 } from './downloader';
 import { binariesStatus, ensureBinaries, ytDlpPath, ffmpegPath } from './binaries';
 import { openScreenshotOverlay, registerScreenshotIpc } from './screenshot';
+import { registerMiniplayerIpc } from './miniplayer';
+import { refreshStatus, updateStatus, downloadUpdate, installUpdate } from './selfupdate';
 import type { DownloadOptions, Note, Settings } from '../shared/types';
 
 export function registerIpc(getMainWindow: () => BrowserWindow | null) {
   registerScreenshotIpc();
+  registerMiniplayerIpc(getMainWindow);
 
   ipcMain.handle('app:version', () => app.getVersion());
   ipcMain.handle('app:settings', () => store.get('settings'));
@@ -35,8 +38,16 @@ export function registerIpc(getMainWindow: () => BrowserWindow | null) {
     store.set('settings', next);
     applyStartup(next.launchAtStartup);
     rebindHotkeys(getMainWindow);
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) win.webContents.send('settings:updated', next);
+    }
     return next;
   });
+  ipcMain.handle('update:status', () => updateStatus());
+  ipcMain.handle('update:check', () => refreshStatus());
+  ipcMain.handle('update:download', () => downloadUpdate(updateStatus().url));
+  ipcMain.handle('update:install', () => installUpdate());
+
   ipcMain.handle('app:binaries', () => binariesStatus());
   ipcMain.handle('binaries:status', () => binariesStatus());
   ipcMain.handle('binaries:ensure', (_e, force: boolean = false) => ensureBinaries(force));

@@ -1,6 +1,6 @@
 {
   "name": "tooldeck",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Windows all-in-one utility app: clipboard history, downloads, screenshots and more",
   "main": "dist/main/index.js",
   "author": "ToolDeck",
@@ -15,7 +15,6 @@
     "dist": "npm run build && electron-builder"
   },
   "dependencies": {
-    "electron-updater": "^6.1.11",
     "framer-motion": "^11.3.19",
     "jsqr": "^1.4.0",
     "lucide-react": "^0.427.0",
@@ -43,11 +42,6 @@
   "build": {
     "appId": "com.tooldeck.app",
     "productName": "ToolDeck",
-    "publish": {
-      "provider": "github",
-      "owner": "npnu",
-      "repo": "tooldeck"
-    },
     "directories": {
       "output": "release"
     },
@@ -64,15 +58,11 @@
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
       ]
     },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+    "portable": {
+      "artifactName": "ToolDeck.exe"
     }
   }
 }

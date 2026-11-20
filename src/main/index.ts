@@ -1,9 +1,9 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, globalShortcut } from 'electron';
-import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { registerIpc, rebindHotkeys, applyStartup } from './ipc';
 import { ensureBinaries } from './binaries';
+import { refreshStatus, runReplaceMode } from './selfupdate';
 import { startClipboardWatcher, stopClipboardWatcher } from './clipboard';
 import { store } from './store';
 
@@ -163,7 +163,9 @@ function showPanel(id: string) {
   mainWindow.webContents.send('navigate', id);
 }
 
-if (!app.requestSingleInstanceLock()) {
+if (process.argv.includes('--update-replace')) {
+  app.whenReady().then(() => runReplaceMode());
+} else if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
@@ -193,20 +195,7 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow?.webContents.send('navigate', 'clipboard');
     });
 
-    if (app.isPackaged) {
-      try {
-        const pkg = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), 'package.json'), 'utf8'));
-        const publish = pkg.build?.publish;
-        const owner = typeof publish === 'object' ? publish.owner : '';
-        const repo = typeof publish === 'object' ? publish.repo : '';
-        if (owner && repo && !String(owner).includes('YOUR_')) {
-          const { autoUpdater } = require('electron-updater');
-          autoUpdater.checkForUpdatesAndNotify().catch(() => undefined);
-        }
-      } catch {
-        /* updater disabled until publish repo is configured */
-      }
-    }
+    setTimeout(() => { refreshStatus().catch(() => undefined); }, 3000);
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

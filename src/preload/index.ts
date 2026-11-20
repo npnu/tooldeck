@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type {
   BinariesStatus,
   ClipboardItem,
+  UpdateStatus,
   DownloadItem,
   DownloadOptions,
   Note,
@@ -61,6 +62,18 @@ const api = {
     list: () => ipcRenderer.invoke('notes:list') as Promise<Note[]>,
     save: (notes: Note[]) => ipcRenderer.invoke('notes:save', notes) as Promise<Note[]>,
   },
+  update: {
+    status: () => ipcRenderer.invoke('update:status') as Promise<UpdateStatus>,
+    check: () => ipcRenderer.invoke('update:check') as Promise<UpdateStatus>,
+    download: () => ipcRenderer.invoke('update:download') as Promise<string>,
+    install: () => ipcRenderer.invoke('update:install'),
+  },
+  miniplayer: {
+    open: () => ipcRenderer.invoke('miniplayer:open'),
+    close: () => ipcRenderer.send('miniplayer:close'),
+    pin: (pinned: boolean) => ipcRenderer.send('miniplayer:pin', pinned),
+    showMain: () => ipcRenderer.send('miniplayer:showMain'),
+  },
   screenshot: {
     open: () => ipcRenderer.invoke('screenshot:open'),
     mounted: () => ipcRenderer.send('screenshot:mounted'),
@@ -72,6 +85,8 @@ const api = {
     onDownloadUpdate: (cb: Listener<DownloadItem[]>) => on('download:update', cb),
     onBinariesProgress: (cb: Listener<BinariesStatus>) => on('binaries:progress', cb),
     onNavigate: (cb: Listener<string>) => on('navigate', cb),
+    onSettingsUpdated: (cb: Listener<Settings>) => on('settings:updated', cb),
+    onUpdateStatus: (cb: Listener<UpdateStatus>) => on('update:status', cb),
     onScreenshotInit: (cb: Listener<string>) => on('screenshot:init', cb),
     onScreenshotCaptured: (cb: Listener<{ dataURL: string; filePath: string }>) => on('screenshot:captured', cb),
     onScreenshotRequest: (cb: Listener<void>) => on('screenshot:request', cb),
